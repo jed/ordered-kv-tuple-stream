@@ -1,7 +1,7 @@
 ordered-kv-tuple-stream
 =======================
 
-ordered-kv-tuple-stream aligns multiple sorted `{key, value}` [readable streams][] (as provided by levelup's [createReadStream][], for example) into a single sorted stream of `{key, value}` tuples.
+ordered-kv-tuple-stream aligns multiple sorted `{key, value}` [readable streams][] (as provided by [levelup][]'s [createReadStream][], for example) into a single sorted stream of `{key, value}` tuples.
 
 Example
 -------
