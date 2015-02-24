@@ -1,0 +1,22 @@
+{
+  "name": "ordered-kv-tuple-stream",
+  "version": "1.0.0",
+  "description": "Aligns multiple sorted k/v readable streams into one",
+  "author": "Jed Schmidt (http://jed.is)",
+  "license": "MIT",
+  "main": "index.es5.js",
+  "scripts": {
+    "build": "babel index.js > index.es5.js",
+    "test": "babel-node test.js"
+  },
+  "devDependencies": {
+    "babel": "^4.4.5",
+    "concat-stream": "^1.4.7"
+  },
+  "keywords": [
+    "keyvalue",
+    "stream",
+    "levelup",
+    "leveldb"
+  ]
+}
