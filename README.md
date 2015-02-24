@@ -42,5 +42,6 @@ API
 
 Takes a `streamTuple` object for which all keys have readable `{key, value}` streams as values, and returns a readable stream that emits aligned `{key, value}` objects. Emitted keys are a union of all original keys and emitted values are tuples whose keys match those of `streamTuple`.
 
+[levelup]: https://github.com/rvagg/node-levelup
 [createReadStream]: https://github.com/rvagg/node-levelup#createReadStream
 [readable streams]: https://iojs.org/api/stream.html#stream_class_stream_readable
