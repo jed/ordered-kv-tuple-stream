@@ -1,7 +1,7 @@
 {
   "name": "ordered-kv-tuple-stream",
   "version": "1.0.0",
-  "description": "Aligns multiple sorted k/v readable streams into one",
+  "description": "Aligns multiple ordered k/v readable streams into one",
   "author": "Jed Schmidt (http://jed.is)",
   "license": "MIT",
   "main": "index.es5.js",
