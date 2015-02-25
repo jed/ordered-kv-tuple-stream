@@ -11,8 +11,9 @@ class OrderedKVTupleStream extends Readable {
     for (let key in tuple) {
       let value = tuple[key]
       let data = null
+      let readable = false
       let ended = false
-      let source = {key, value, data, ended}
+      let source = {key, value, data, readable, ended}
 
       this._sources.push(source)
     }
@@ -23,6 +24,7 @@ class OrderedKVTupleStream extends Readable {
   _setup() {
     for (let source of this._sources) {
       source.value.on("readable", () => {
+        source.readable = true
         source.value.pause()
         this._check()
       })
@@ -40,17 +42,17 @@ class OrderedKVTupleStream extends Readable {
     let sources = []
 
     for (let source of this._sources) {
+      if (!source.readable) return
+
       if (!source.data) source.data = source.value.read()
 
-      if (source.data) {
-        sources.push(source)
-        continue
+      if (!source.data) {
+        source.readable = false
+        source.value.resume()
+        if (!source.ended) return
       }
 
-      if (!source.ended) {
-        source.value.resume()
-        return
-      }
+      sources.push(source)
     }
 
     if (!sources.length) return this.push(null)
