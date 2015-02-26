@@ -1,82 +1,79 @@
 import {Readable} from "stream"
 
-class OrderedKVTupleStream extends Readable {
-  constructor(tuple) {
-    super({objectMode: true})
+export default tuple => {
+  let sink = Readable({read, objectMode: true})
+  let names = Object.keys(tuple)
+  let sources = names.map(name => tuple[name])
 
-    this._pushReady = false
-    this._Ctor = tuple.constructor
-    this._sources = []
+  let isStarted = false
+  let isPushable = false
 
-    for (let key in tuple) {
-      let value = tuple[key]
-      let data = null
-      let readable = false
-      let ended = false
-      let source = {key, value, data, readable, ended}
+  let numTotal = sources.length
+  let numLeft = numTotal
+  let numReadable = 0
 
-      this._sources.push(source)
-    }
+  function start() {
+    isStarted = true
 
-    this._setup()
+    sources.forEach(source =>
+      source
+        .on("readable", onreadable)
+        .on("end", onend)
+        .pause()
+    )
   }
 
-  _setup() {
-    for (let source of this._sources) {
-      source.value.on("readable", () => {
-        source.readable = true
-        source.value.pause()
-        this._check()
-      })
-
-      source.value.on("end", () => {
-        source.ended = true
-        this._check()
-      })
-    }
+  function onreadable() {
+    numReadable++
+    flush()
   }
 
-  _check() {
-    if (!this._pushReady) return
+  function onend() {
+    numLeft--
+    flush()
+  }
 
-    let sources = []
+  function read() {
+    if (!isStarted) start()
 
-    for (let source of this._sources) {
-      if (!source.readable) return
+    isPushable = true
+    flush()
+  }
 
-      if (!source.data) source.data = source.value.read()
+  function flush() {
+    if (!numLeft) return sink.push(null)
 
-      if (!source.data) {
-        source.readable = false
-        source.value.resume()
-        if (!source.ended) return
+    if (!isPushable || numReadable < numTotal) return
+
+    let kvs = sources.map(source => source.read())
+    let key = kvs.map(kv => kv && kv.key).sort()[0]
+
+    if (!key) return
+
+    let value = new tuple.constructor
+
+    sources.forEach((source, i) => {
+      let kv = kvs[i]
+
+      if (!kv) {
+        if (source.isPaused()) {
+          source.resume()
+          numReadable--
+        }
+
+        return
       }
 
-      sources.push(source)
-    }
-
-    if (!sources.length) return this.push(null)
-
-    let key
-    for (let {data} of sources) {
-      if (!key || data.key < key) key = data.key
-    }
-
-    let value = new this._Ctor
-    for (let source of sources) {
-      if (source.data.key == key) {
-        value[source.key] = source.data.value
-        delete source.data
+      if (kv.key !== key) {
+        source.unshift(kv)
+        return
       }
-    }
 
-    this._pushReady = this.push({key, value})
+      value[names[i]] = kv.value
+    })
+
+    sink.push({key, value})
   }
 
-  _read() {
-    this._pushReady = true
-    this._check()
-  }
+  return sink
 }
-
-export default tuple => new OrderedKVTupleStream(tuple)
