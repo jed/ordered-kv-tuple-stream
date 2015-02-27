@@ -1,7 +1,7 @@
 import {deepEqual} from "assert"
 import {Readable} from "stream"
 import concat from "concat-stream"
-import OrderedKVTupleStream from "./index"
+import OrderedKVTupleStream from "./ordered-kv-tuple-stream"
 
 let before = [
   {key: "a", value: {before: 1          }},

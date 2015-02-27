@@ -4,9 +4,8 @@
   "description": "Aligns multiple ordered k/v readable streams into one",
   "author": "Jed Schmidt (http://jed.is)",
   "license": "MIT",
-  "main": "index.es5.js",
   "scripts": {
-    "build": "babel index.js > index.es5.js",
+    "build": "babel ordered-kv-tuple-stream.js > index.js",
     "test": "babel-node test.js",
     "prepublish": "npm run build"
   },
