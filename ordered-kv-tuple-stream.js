@@ -8,19 +8,16 @@ export default tuple => {
   let isStarted = false
   let isPushable = false
 
-  let numTotal = sources.length
-  let numLeft = numTotal
+  let numLeft = sources.length
   let numReadable = 0
 
   function start() {
     isStarted = true
 
-    sources.forEach(source =>
-      source
-        .on("readable", onreadable)
-        .on("end", onend)
-        .pause()
-    )
+    for (let source of sources) {
+      source.on("readable", onreadable)
+      source.on("end", onend)
+    }
   }
 
   function onreadable() {
@@ -41,38 +38,24 @@ export default tuple => {
   }
 
   function flush() {
-    if (!numLeft) return sink.push(null)
+    while (isPushable && numReadable === numLeft) {
+      let kvs = sources.map(source => source.read())
+      let key = kvs.map(kv => kv && kv.key).sort()[0]
 
-    if (!isPushable || numReadable < numTotal) return
+      if (!key) return sink.push(null)
 
-    let kvs = sources.map(source => source.read())
-    let key = kvs.map(kv => kv && kv.key).sort()[0]
+      let value = new tuple.constructor
 
-    if (!key) return
+      kvs.forEach((kv, i) => {
+        if (!kv) numReadable--
 
-    let value = new tuple.constructor
+        else if (kv.key !== key) sources[i].unshift(kv)
 
-    sources.forEach((source, i) => {
-      let kv = kvs[i]
+        else value[names[i]] = kv.value
+      })
 
-      if (!kv) {
-        if (source.isPaused()) {
-          source.resume()
-          numReadable--
-        }
-
-        return
-      }
-
-      if (kv.key !== key) {
-        source.unshift(kv)
-        return
-      }
-
-      value[names[i]] = kv.value
-    })
-
-    sink.push({key, value})
+      sink.push({key, value})
+    }
   }
 
   return sink
