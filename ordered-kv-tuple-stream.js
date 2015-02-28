@@ -1,62 +1,69 @@
-import {Readable} from "stream"
+import {Readable, Transform} from "stream"
 
 export default tuple => {
-  let sink = Readable({read, objectMode: true})
-  let names = Object.keys(tuple)
-  let sources = names.map(name => tuple[name])
+  let sources = Object.keys(tuple).map(name => {
+    let source = {name}
 
-  let isStarted = false
-  let isPushable = false
+    let transform = Transform({
+      objectMode: true,
 
-  let numLeft = sources.length
-  let numReadable = 0
+      transform(kv, enc, cb) {
+        source.kv = kv
+        source.cb = cb
 
-  function start() {
-    isStarted = true
+        push()
+      },
 
-    for (let source of sources) {
-      source.on("readable", onreadable)
-      source.on("end", onend)
-    }
+      flush(cb) {
+        let index = sources.filter(x => x.name === name)[0]
+        sources.splice(index, 1)
+
+        push()
+        cb()
+      }
+    })
+
+    tuple[name].pipe(transform)
+
+    return source
+  })
+
+  let pushable = false
+  let read = () => {
+    pushable = true
+    push()
   }
 
-  function onreadable() {
-    numReadable++
-    flush()
-  }
+  let push = () => {
+    if (!sources.length) return tuples.push(null)
 
-  function onend() {
-    numLeft--
-    flush()
-  }
+    let kvs = sources.map(source => source.kv)
+    let ready = kvs.every(Boolean)
 
-  function read() {
-    if (!isStarted) start()
+    if (!ready) return
 
-    isPushable = true
-    flush()
-  }
+    let value = new tuple.constructor
+    let key = kvs.map(kv => kv.key).sort()[0]
 
-  function flush() {
-    while (isPushable && numReadable === numLeft) {
-      let kvs = sources.map(source => source.read())
-      let key = kvs.map(kv => kv && kv.key).sort()[0]
+    let cbs = sources
+      .filter(source => source.kv && source.kv.key === key)
+      .map(source => {
+        let cb = source.cb
 
-      if (!key) return sink.push(null)
+        value[source.name] = source.kv.value
 
-      let value = new tuple.constructor
+        delete source.kv
+        delete source.cb
 
-      kvs.forEach((kv, i) => {
-        if (!kv) numReadable--
-
-        else if (kv.key !== key) sources[i].unshift(kv)
-
-        else value[names[i]] = kv.value
+        return cb
       })
 
-      sink.push({key, value})
-    }
+    pushable = tuples.push({key, value})
+
+    cbs.forEach(cb => cb())
   }
 
-  return sink
+  let tuples = new Readable({read, objectMode: true})
+
+  return tuples
 }
