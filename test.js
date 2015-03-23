@@ -4,10 +4,10 @@ import concat from "concat-stream"
 import OrderedKVTupleStream from "./ordered-kv-tuple-stream"
 
 let before = [
-  {key: "a", value: {before: 1          }},
-  {key: "b", value: {before: 2, after: 2}},
-  {key: "c", value: {before: 3, after: 4}},
-  {key: "d", value: {           after: 5}}
+  {key: Buffer("a"), value: {before: 1          }},
+  {key: Buffer("b"), value: {before: 2, after: 2}},
+  {key: Buffer("c"), value: {before: 3, after: 4}},
+  {key: Buffer("d"), value: {           after: 5}}
 ]
 
 let streams = {}

@@ -1,5 +1,11 @@
 import {Readable, Transform} from "stream"
 
+const sortTypes = {
+  number: (a, b) => a - b,
+  object: Buffer.compare,
+  string: undefined
+}
+
 export default tuple => {
   let sources = Object.keys(tuple).map(name => {
     let source = {name}
@@ -43,7 +49,8 @@ export default tuple => {
     if (!ready) return
 
     let value = new tuple.constructor
-    let key = kvs.map(kv => kv.key).sort()[0]
+    let sort = sortTypes[typeof kvs[0].key]
+    let key = kvs.map(kv => kv.key).sort(sort)[0]
 
     let cbs = sources
       .filter(source => source.kv && source.kv.key === key)
