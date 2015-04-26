@@ -1,4 +1,4 @@
-import {Readable, Transform} from "stream"
+import {Readable} from "stream"
 
 const sortTypes = {
   number: (a, b) => a - b,
@@ -7,70 +7,61 @@ const sortTypes = {
 }
 
 export default tuple => {
-  let sources = Object.keys(tuple).map(name => {
-    let source = {name}
+  let sources
+  let isPushable = false
+  let ctor = tuple.constructor
 
-    let transform = Transform({
-      objectMode: true,
+  let setup = () => {
+    sources = Object.keys(tuple).map(name => {
+      let data = []
 
-      transform(kv, enc, cb) {
-        source.kv = kv
-        source.cb = cb
-
-        push()
-      },
-
-      flush(cb) {
-        let index = sources.filter(x => x.name === name)[0]
-        sources.splice(index, 1)
-
-        push()
-        cb()
-      }
-    })
-
-    tuple[name].pipe(transform)
-
-    return source
-  })
-
-  let pushable = false
-  let read = () => {
-    pushable = true
-    push()
-  }
-
-  let push = () => {
-    if (!sources.length) return tuples.push(null)
-
-    let kvs = sources.map(source => source.kv)
-    let ready = kvs.every(Boolean)
-
-    if (!ready) return
-
-    let value = new tuple.constructor
-    let sort = sortTypes[typeof kvs[0].key]
-    let key = kvs.map(kv => kv.key).sort(sort)[0]
-
-    let cbs = sources
-      .filter(source => source.kv && source.kv.key === key)
-      .map(source => {
-        let cb = source.cb
-
-        value[source.name] = source.kv.value
-
-        delete source.kv
-        delete source.cb
-
-        return cb
+      tuple[name].on("end", () => {
+        data.push(null)
+        check()
       })
 
-    pushable = tuples.push({key, value})
+      tuple[name].on("readable", () => {
+        let kv
+        while (kv = tuple[name].read()) data.push(kv)
+        check()
+      })
 
-    cbs.forEach(cb => cb())
+      return {name, data}
+    })
   }
 
-  let tuples = new Readable({read, objectMode: true})
+  let read = () => {
+    if (!sources) setup()
 
-  return tuples
+    isPushable = true
+    check()
+  }
+
+  let check = () => {
+    if (!isPushable) return
+
+    let isReady = sources.every(x => 0 in x.data)
+
+    if (!isReady) return
+
+    let actives = sources.filter(x => x.data[0] !== null)
+
+    if (actives.length === 0) return rs.push(null)
+
+    let keys = actives.map(x => x.data[0].key)
+    let key = keys.sort(sortTypes[typeof keys[0]])[0]
+    let value = actives.reduce((acc, x) => {
+      if (x.data[0].key === key) {
+        acc[x.name] = x.data.shift().value
+      }
+
+      return acc
+    }, new ctor)
+
+    rs.push({key, value})
+  }
+
+  let rs = new Readable({objectMode: true, read})
+
+  return rs
 }
