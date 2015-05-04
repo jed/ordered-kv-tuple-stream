@@ -61,7 +61,9 @@ export default tuple => {
     rs.push({key, value})
   }
 
-  let rs = new Readable({objectMode: true, read})
+  let rs = new Readable({objectMode: true})
+
+  rs._read = read
 
   return rs
 }
