@@ -1,13 +1,14 @@
 import {deepEqual} from "assert"
 import {Readable} from "stream"
 import concat from "concat-stream"
+import {encode} from "bytewise"
 import OrderedKVTupleStream from "./ordered-kv-tuple-stream"
 
 let before = [
-  {key: Buffer("a"), value: {before: 1          }},
-  {key: Buffer("b"), value: {before: 2, after: 2}},
-  {key: Buffer("c"), value: {before: 3, after: 4}},
-  {key: Buffer("d"), value: {           after: 5}}
+  {key: encode(["a", 1]), value: {before: 1          }},
+  {key: encode(["b", 1]), value: {before: 2, after: 2}},
+  {key: encode(["c", 1]), value: {before: 3, after: 4}},
+  {key: encode(["d", 1]), value: {           after: 5}}
 ]
 
 let streams = {}
@@ -30,6 +31,7 @@ for (let name in streams) {
 }
 
 let rs = OrderedKVTupleStream(streams)
-let ws = concat(after => deepEqual(before, after))
+rs.on("data", console.log)
+// let ws = concat(after => deepEqual(before, after))
 
-rs.pipe(ws)
+// rs.pipe(ws)

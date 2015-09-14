@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "babel": "^4.4.5",
+    "bytewise": "^1.1.0",
     "concat-stream": "^1.4.7"
   },
   "keywords": [

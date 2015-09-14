@@ -6,6 +6,12 @@ const sortTypes = {
   string: undefined
 }
 
+const compareTypes = {
+  number: (a, b) => a === b,
+  object: (a, b) => Buffer.compare(a, b) === 0,
+  string: (a, b) => a === b
+}
+
 export default tuple => {
   let sources
   let isPushable = false
@@ -49,9 +55,10 @@ export default tuple => {
     if (actives.length === 0) return rs.push(null)
 
     let keys = actives.map(x => x.data[0].key)
-    let key = keys.sort(sortTypes[typeof keys[0]])[0]
+    let type = typeof keys[0]
+    let key = keys.sort(sortTypes[type])[0]
     let value = actives.reduce((acc, x) => {
-      if (x.data[0].key === key) {
+      if (compareTypes[type](x.data[0].key, key)) {
         acc[x.name] = x.data.shift().value
       }
 
