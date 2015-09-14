@@ -31,7 +31,6 @@ for (let name in streams) {
 }
 
 let rs = OrderedKVTupleStream(streams)
-rs.on("data", console.log)
-// let ws = concat(after => deepEqual(before, after))
+let ws = concat(after => deepEqual(before, after))
 
-// rs.pipe(ws)
+rs.pipe(ws)
